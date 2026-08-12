@@ -1,0 +1,69 @@
+1. Initial vs. Final Understanding
+
+Initial understanding: From the directory name and filenames, I initially expected a small Python task-management application with a CLI, domain models, persistence, and tests. I expected the main business logic to be in task_manager.py and assumed storage.py would handle persistence.
+
+Final understanding: The project is a Python 3.11+ command-line application using only the standard library. The architecture is a simple layered structure: cli.py handles user interaction; TaskManager in task_manager.py coordinates application operations; models.py defines the Task domain model and enums; storage.py provides JSON persistence; and tests/ contains unittest-based tests. The README confirms that there are no external dependencies. 
+
+Key misconception/discovery: The README documents command names such as update-status, while the actual CLI registers status, priority, due, tag and untag. I therefore treated the source code as the authoritative implementation.
+
+2. Key Components and Architecture
+
+• cli.py — application entry point; uses argparse, converts command-line arguments, calls TaskManager and formats output.
+
+• task_manager.py — application/service layer; creates, updates, deletes, filters and reports on tasks.
+
+• models.py — domain layer; defines TaskPriority, TaskStatus and Task, including completion and overdue behaviour.
+
+• storage.py — persistence layer; stores tasks in memory and serializes/deserializes them to tasks.json using custom JSON encoder/decoder classes.
+
+• tests/test_task_manager.py — unit tests covering task creation, updates, filtering, tags, statistics and error cases.
+
+3. Feature Investigation: Task Export to CSV
+
+Search approach: I searched for export, CSV, file, JSON, serialization, save, load, encode, decode and transformation-related functionality. The existing file-related implementation is concentrated in storage.py, which reads and writes tasks.json and already transforms Task objects into serializable dictionaries.
+
+Implementation hypothesis: CSV export should be exposed through TaskManager and the CLI, while the CSV formatting/writing operation should be isolated from the domain model. A small exporter utility/module would keep CSV-specific concerns separate from JSON persistence.
+
+• Add an export_tasks_csv(...) method at the application layer, or a dedicated exporter utility if the project is expected to grow.
+
+• Use Python's csv module to write fields such as id, title, description, priority, status, due_date and tags.
+
+• Add a CLI command such as export-csv with an optional output filename.
+
+• Add tests for empty exports, multiple tasks, tags, dates, priority/status values and correct CSV headers.
+
+• Reuse TaskManager/storage retrieval rather than duplicating task-loading logic.
+
+4. Domain Model
+
+Relationship: Task has one TaskStatus and one TaskPriority, plus optional due-date and tag data.
+
+• Task — core entity containing ID, title, description, priority, status, timestamps, due date, completion time and tags.
+
+• TaskStatus — TODO, IN_PROGRESS, REVIEW and DONE.
+
+• TaskPriority — LOW, MEDIUM, HIGH and URGENT.
+
+• Business concepts — overdue means a task has a due date in the past and is not DONE; completed tasks record completed_at.
+
+5. Business Rule: Abandon Tasks Overdue by More Than 7 Days
+
+Required rule: If a task is more than seven days past its due date, it should become ABANDONED unless its priority is HIGH (the wording says high priority, so URGENT should be clarified with the team rather than assumed).
+
+• models.py: add TaskStatus.ABANDONED and, preferably, a domain method such as is_overdue_more_than(days) or mark_as_abandoned().
+
+• task_manager.py: add the application-level operation that scans tasks and applies the rule, preserving high-priority tasks.
+
+• storage.py: persist the new status automatically through the existing JSON encoder/decoder.
+
+• cli.py: optionally expose a maintenance command if automatic processing is intended to happen when the application starts or on demand.
+
+• tests/test_task_manager.py: add boundary tests for exactly 7 days, more than 7 days, HIGH priority, URGENT priority, DONE tasks, and tasks without due dates.
+
+Questions for the team: Does 'more than 7 days' mean strictly greater than 7×24 hours or eight calendar dates? Should URGENT tasks also be exempt? When should the automatic rule run—on startup, before listing tasks, on a scheduled job, or through a command? Can an ABANDONED task be reopened, and should its original status be retained?
+
+6. Reflection and Next Steps
+
+The project-structure prompt helped establish the architecture and entry points before reading implementation details. The feature-location prompt narrowed the search to existing persistence and data-transformation patterns instead of searching randomly. The domain-model prompt highlighted the relationship between Task, status, priority, due dates and business rules. The most important lesson was to use AI as a guide while verifying its conclusions against the actual source code and tests.
+
+Next steps: run the full test suite, inspect edge cases in the existing tests, clarify the automatic-execution mechanism for the new rule, implement CSV export and the ABANDONED status in small changes, and add regression tests before opening a pull request.

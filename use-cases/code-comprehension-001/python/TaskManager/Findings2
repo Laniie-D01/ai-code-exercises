@@ -1,0 +1,182 @@
+# Code Understanding Journal
+
+## Codebase Exploration Challenge
+
+### Part 1: Understanding Task Creation and Status Updates
+
+## Initial Codebase Exploration
+
+I started by looking at the project structure first instead of trying to understand all of the code at once. I looked at the file names and the general purpose of the different parts of the project.
+
+The project is a Python task manager. From the structure, the main responsibilities seem to be:
+
+- Managing tasks
+- Creating new tasks
+- Updating existing tasks
+- Changing task status
+- Managing task priority
+- Storing and retrieving task information
+
+I tried to focus on the files that seemed directly related to tasks instead of reading unrelated files.
+
+---
+
+## Task Creation
+
+The main parts involved in creating a task are:
+
+- The part of the application that receives the user's input
+- The task/model that represents a task
+- The task management logic
+- The storage/persistence part of the application
+
+### My understanding of the flow
+
+1. The user provides the information needed to create a task.
+2. The application receives this information.
+3. A new task is created using the supplied information.
+4. The new task is added to the application's task data.
+5. The task can then be retrieved later when the application needs to display or work with it.
+
+The task itself contains information such as its description/details, priority and status.
+
+---
+
+## Updating Task Status
+
+Status updates follow a similar process.
+
+1. The user selects or identifies a task.
+2. The application finds the relevant task.
+3. The status of the task is changed.
+4. The updated task remains in the application's current state.
+5. The change is saved so that the updated status can be retrieved later.
+
+One thing I noticed is that changing a task's status is basically a state change. The task stays the same task, but one of its properties changes.
+
+For example:
+
+`Incomplete -> Complete`
+
+---
+
+## How Data Is Stored and Retrieved
+
+Tasks need to exist somewhere after they are created. The application therefore has a way of keeping the task information and retrieving it when needed.
+
+The general process is:
+
+`Create task -> Store task -> Retrieve task -> Update task -> Store updated task`
+
+This means that when a task is completed, changing the object in memory is not enough if the application is expected to remember the change after restarting. The updated state also needs to be persisted.
+
+---
+
+## Design Observations
+
+One thing I noticed is the separation between the task itself and the code that manages the task.
+
+The task represents the information/state, while the management logic is responsible for operations such as creating, finding and updating tasks.
+
+This makes the code easier to follow because the responsibilities are not all mixed together.
+
+---
+
+# Part 2: Deepening Understanding Through Guided Questions
+
+## Task Prioritisation
+
+Before looking at the prioritisation code in detail, my initial understanding was that priority was simply another property of a task.
+
+I expected tasks to have different priority levels, such as:
+
+- Low
+- Medium
+- High
+
+I also assumed that the priority would probably be used when displaying or organising tasks.
+
+However, I realised that there is a difference between **storing a priority** and actually **using the priority**.
+
+---
+
+## Questions I Used to Investigate the Code
+
+I looked at questions such as:
+
+- Where is the priority first assigned?
+- What type of value is used for priority?
+- Can the priority be changed after a task is created?
+- Where is priority checked?
+- Does priority affect the order of tasks?
+- What happens if an invalid priority is entered?
+- Is priority handled by the task itself or by the task manager?
+
+These questions helped me decide which parts of the code needed more attention.
+
+---
+
+## What I Discovered
+
+The main thing I learned is that just because a task has a priority value does not automatically mean the application is sorting tasks according to that value.
+
+There are two separate things:
+
+1. The task stores its priority.
+2. Other code can use that priority to decide how tasks should be displayed, sorted or filtered.
+
+This was something I had not really considered at first.
+
+I also found that validation is important. If the application expects certain priority values, it needs to prevent invalid values from creating inconsistent task data.
+
+---
+
+## Initial Understanding vs What I Found
+
+### Initial understanding
+
+I thought the priority system was mainly about assigning a priority such as high, medium or low to a task.
+
+### After looking deeper
+
+I realised that understanding the feature requires following the priority value through the application.
+
+It is important to find:
+
+`Where priority is created -> Where priority is stored -> Where priority is changed -> Where priority is used`
+
+This gave me a better understanding of how the feature actually works.
+
+---
+
+# Part 3: Mapping Data Flow and State Management
+
+## Marking a Task as Complete
+
+The main thing I wanted to understand here was what happens between the moment a user marks a task as complete and the moment the application remembers that change.
+
+The basic flow I identified is:
+
+```text
+User marks task as complete
+            |
+            v
+Application receives request
+            |
+            v
+Task management logic
+            |
+            v
+Find the selected task
+            |
+            v
+Change task status
+            |
+            v
+Update application state
+            |
+            v
+Save/persist updated task
+            |
+            v
+Task is retrieved later as completed
